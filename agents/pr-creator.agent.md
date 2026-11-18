@@ -1,13 +1,16 @@
 ---
 name: pr-creator
 description: "Use when creating a GitHub pull request or GitLab merge request for the current branch: checks the branch, collects the PR/MR template values, drafts the title and description from the diff, and creates it after confirmation."
-argument-hint: "Source branch, optional target branch, title, and template values (ticket link, summary, test links)"
+argument-hint: "Source branch, optional target branch, title, Link, Summary, and optional Design/How to verify and Test Links"
 tools:
   - read
   - search
   - execute
   - github/list_pull_requests
+  - github/list_branches
   - github/pull_request_read
+  - github/get_file_contents
+  - github/get_label
   - github/create_pull_request
   - gitlab/get_project
   - gitlab/list_branches
@@ -42,44 +45,36 @@ Before drafting, look for project-specific PR/MR rules and follow them where the
 
 ## Approach
 
-### 1. Check the branch
-1. Detect GitHub or GitLab from `git remote -v`, and the project from the remote URL. Do not guess the project.
-2. Confirm the **source branch** with the user. It must be the checked-out branch, it must exist on the remote, and the local branch must not be ahead of or behind it. Otherwise stop and say what needs updating.
-3. Use the target branch the user gave. Otherwise get the project's default branch from the API and confirm it with the user.
-4. Check that no PR/MR is already open for this source branch. If one is, return its URL and stop.
-5. Report uncommitted local changes and say that they will **not** be in the PR/MR.
+### 1. Check the branch and repository
+1. Require the user to identify the **source branch**. Detect GitHub or GitLab and the project from the configured Git remote; never guess the project.
+2. Inspect the worktree status, current branch, and source and target refs. The checked-out branch must match the requested source branch, and that source branch must already exist on the remote. Compare the local source tip with the remote branch tip. If any condition fails, stop and tell the user what needs updating. Never switch branches, create branches, or push.
+3. Use the supplied target branch. If omitted, get the default branch from GitLab `get_project`, or from GitHub repository metadata (or the configured remote's advertised HEAD). Do not guess; if the default cannot be determined, ask the user for the target branch.
+4. Check whether a PR/MR is already open for this source branch. If so, return its URL and stop.
+5. Report any uncommitted local changes and state that they will not be included in the PR/MR.
 
-### 2. Check the scope
-Compare source and target (commit count, files changed, insertions and deletions). **Warn before continuing** if:
-- The branch combines several tickets or merges other feature branches.
-- It deletes or changes config, deployment, environment, or lockfiles.
-- It is very large (for example more than 50 files).
-
-Suggest a narrower source branch or a different target, and continue only if the user confirms.
-
-### 3. Collect the template values
-1. Find the template: `.github/pull_request_template.md`, `.github/PULL_REQUEST_TEMPLATE/*.md`, or `.gitlab/merge_request_templates/*.md`. If there are several, ask which one to use.
-2. Ask in **one message** for the values the template needs. Typical fields:
+### 2. Collect the template values
+1. For GitLab, use `.gitlab/merge_request_templates/story.md`. For GitHub, use the repository's `.github/pull_request_template.md` or `.github/PULL_REQUEST_TEMPLATE/*.md`. If multiple applicable templates exist, ask which to use.
+2. Ask in **one message** for any missing required values. Do not invent them:
    ```text
    Title:
-   Ticket link:
+   Link:
    Summary:
    Design: (optional)
    How to verify: (optional)
-   Test links:
+   Test Links:
    ```
-3. Leave out optional sections the user doesn't provide content for. If a requested test link is missing, put `WIP`. If the user wants a minimal PR/MR, use `Not provided` for missing required fields.
-4. If a ticket key is given and the Atlassian tools are available, read the ticket to improve the summary. Don't copy it verbatim.
+3. Link and Summary are requested fields. If the user explicitly wants a minimal PR/MR, use `Not provided` for either missing value. Design and How to verify are optional; do not ask for them if omitted, and omit their sections unless the user provides content.
+4. Test Links is requested. Include the provided INT test link; if none is provided, put `WIP`. Do not request or include an STG link or field, even if it appears in the repository template.
+5. If a ticket key is given and the Atlassian tools are available, read the ticket to improve the summary. Don't copy it verbatim.
 
-### 4. Draft
-1. Read the diff and summarize what changed and why, grouped by area. Keep it short.
-2. Build the description from the template, keeping its headings.
-3. **Use the user's title exactly as given.** Do not add `Draft:`, `WIP:`, or other prefixes unless the user asks.
-4. **Labels:** apply only labels that already exist in the project, through the API's labels field. If the template contains a quick action such as `/label ~"…"`, remove that line from the description; apply its labels through the field only if project rules or the user say so.
-5. **Checks:** do not run lint, tests, or builds unless the user asks. If they weren't run, say so in the verification section.
+### 3. Draft the PR/MR
+1. Read the source-to-target diff and summarize the change in the selected template, preserving its headings except for omitted optional sections and the prohibited STG field.
+2. **Use the user's title exactly as given.** Do not add `Draft:`, `WIP:`, or other prefixes.
+3. Apply only the existing `code review` label through the PR/MR tool's labels field. Verify it exists using available host label data; if it is absent or cannot be verified, do not create it or substitute another label. Never include a label quick-action line in the description.
+4. Do not run tests, lint, builds, or other validation commands. State in the verification section that checks were not run.
 
-### 5. Confirm, then create
-1. Show a preview: source → target, title, labels, full description, uncommitted changes left out, check status, and any scope warnings.
+### 4. Confirm, then create
+1. Show a preview with source and target branches, the unchanged title, full description, label, and the fact that checks were not run.
 2. Wait for an explicit "yes", and apply any changes the user asks for.
-3. Create the PR/MR and return its URL and reference (for example `!123` or `#123`).
-4. Report project settings that matter after creation, for example "delete source branch on merge" being on.
+3. Create the PR/MR only after confirmation. Never approve, merge, or post review comments.
+4. Return the PR/MR URL and state that checks were not run.

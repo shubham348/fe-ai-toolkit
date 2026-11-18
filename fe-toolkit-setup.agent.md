@@ -93,7 +93,7 @@ Before writing, use `web` to check each remote endpoint and package name against
 | --- | --- | --- | --- |
 | `test-writer` | Core | Edit | Unit and component tests |
 | `e2e-tester` | Core | Edit | Playwright E2E tests |
-| `pr-creator` | Core | Remote write (asks first) | Create a PR/MR |
+| `pr-creator` | Core | Remote write (asks first) | Create GitHub PRs or GitLab MRs only after confirmation; requires the checked-out source branch to exist and be current on the remote, uses the project template, and never runs validation checks |
 | `pr-reviewer` | Core | Read-only | Review a PR/MR and suggest comments, never posts |
 | `a11y-auditor` | Core | Read-only, edits on request | WCAG 2.2 AA audit and fixes |
 | `seo-auditor` | Core | Read-only, edits on request | SEO audit and fixes |
