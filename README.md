@@ -227,3 +227,10 @@ It then prints the **Agents added** table (name, what it does, example prompt) a
 
 ---
 
+## 11. Principles
+1. **Least privilege:** each agent gets only the tools it needs.
+2. **Human in the loop:** plan first, confirm, then apply.
+3. **Enforce in config, guide in prompts:** tool lists enforce limits; instructions only guide behavior.
+4. **Detect, don't assume:** adapt to the user's stack.
+5. **Official sources and no secrets in files.**
+6. **Safe to re-run:** running setup twice changes nothing.
