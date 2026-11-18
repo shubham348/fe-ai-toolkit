@@ -235,3 +235,5 @@ It then prints the **Agents added** table (name, what it does, example prompt) a
 4. **Detect, don't assume:** adapt to the user's stack.
 5. **Official sources and no secrets in files.**
 6. **Safe to re-run:** running setup twice changes nothing.
+
+## Read More At Medium: https://medium.com/@shubham3480
