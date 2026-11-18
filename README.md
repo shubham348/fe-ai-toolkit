@@ -66,6 +66,7 @@ A shareable VS Code Copilot setup for frontend engineers. Run **one master agent
 | No overwrites | If a file with the same name exists, the agent asks before replacing it |
 | Copy, never move or delete | Existing agent, prompt, and `mcp.json` files are never moved, renamed, or deleted, even if they look like duplicates |
 | No secrets in files | Uses `${input:...}` prompts or environment variables for tokens |
+| No automatic Git publishing | Agents leave changes for you to review; commit or push only after your explicit request and confirmation |
 | Official sources only | Every MCP server comes from the vendor's official package or endpoint |
 | Read-only by design | Review and audit agents get no write or comment tools |
 
